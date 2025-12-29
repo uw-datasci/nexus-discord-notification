@@ -29922,9 +29922,13 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 339:
-/***/ ((module) => {
+/***/ 5279:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
 
+"use strict";
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   A: () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
 /**
  * Discord Notification Sender - Sends Discord notifications for PR deployments
  */
@@ -29988,14 +29992,19 @@ function createDiscordEmbed(prInfo, deploymentInfo) {
 }
 
 /**
- * Main function to send Discord notification
+ * Sends Discord notification for preview deployment
  * @param {Object} core - GitHub Actions core
- * @param {Object} github - GitHub API instance
  * @param {Object} context - GitHub context (contains PR info)
  * @param {Object} deploymentInfo - Deployment information from URL constructor
+ * @param {string} webhookUrl - Discord webhook URL (passed directly for security)
  * @returns {Promise<void>}
  */
-async function main(core, github, context, deploymentInfo) {
+async function sendDiscordNotification(
+  core,
+  context,
+  deploymentInfo,
+  webhookUrl
+) {
   try {
     console.log("🚀 Sending Discord notification...");
 
@@ -30018,10 +30027,9 @@ async function main(core, github, context, deploymentInfo) {
     console.log("PR Info:", JSON.stringify(prInfo, null, 2));
     console.log("Deployment Info:", JSON.stringify(deploymentInfo, null, 2));
 
-    // Get Discord webhook URL from environment
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    // Validate webhook URL
     if (!webhookUrl) {
-      core.setFailed("❌ DISCORD_WEBHOOK_URL secret is not set");
+      core.setFailed("❌ Discord webhook URL is not provided");
       return;
     }
 
@@ -30036,9 +30044,7 @@ async function main(core, github, context, deploymentInfo) {
     // Send to Discord webhook
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -30052,11 +30058,13 @@ async function main(core, github, context, deploymentInfo) {
     console.log("✅ Discord notification sent successfully!");
   } catch (error) {
     console.error("❌ Error sending Discord notification:", error);
-    core.setFailed(`Failed to send Discord notification: ${error.message}`);
+    // Don't include error details that might leak the webhook URL
+    const safeErrorMessage = error.message || "Unknown error occurred";
+    core.setFailed(`Failed to send Discord notification: ${safeErrorMessage}`);
   }
 }
 
-module.exports = { main };
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (sendDiscordNotification);
 
 
 /***/ }),
@@ -30071,15 +30079,15 @@ __nccwpck_require__.r(__webpack_exports__);
 /* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(3228);
 /* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _discord_sender_js__WEBPACK_IMPORTED_MODULE_2__ = __nccwpck_require__(5279);
 
 
 
-const { main } = __nccwpck_require__(339);
+
 
 async function run() {
   try {
     // Get inputs defined in action.yml
-    const githubToken = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("github-token", { required: true });
     const discordWebhookUrl = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("discord-webhook-url", {
       required: true,
     });
@@ -30094,21 +30102,19 @@ async function run() {
       return;
     }
 
-    // Set environment variable for Discord webhook URL
-    process.env.DISCORD_WEBHOOK_URL = discordWebhookUrl;
-
-    // Create GitHub API client
-    const github = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(githubToken);
-
     // Create core object with required methods
-    // Note: discord-notification-sender.js calls core.setFailed() and then returns,
+    // Note: discord-sender.js calls core.setFailed() and then returns,
     // so we just need to map it to the action's setFailed function
-    const core = {
-      setFailed: _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed,
-    };
+    const core = { setFailed: _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed };
 
-    // Call the main function from discord-notification-sender
-    await main(core, github, _actions_github__WEBPACK_IMPORTED_MODULE_1__.context, deploymentInfo);
+    // Call the sendDiscordNotification function from discord-sender
+    // Pass webhook URL directly as parameter (more secure than process.env)
+    await (0,_discord_sender_js__WEBPACK_IMPORTED_MODULE_2__/* ["default"] */ .A)(
+      core,
+      _actions_github__WEBPACK_IMPORTED_MODULE_1__.context,
+      deploymentInfo,
+      discordWebhookUrl
+    );
   } catch (error) {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Action failed: ${error.message}`);
   }
