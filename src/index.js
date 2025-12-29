@@ -1,12 +1,11 @@
 import { getInput, setFailed } from "@actions/core";
-import { getOctokit, context } from "@actions/github";
+import { context } from "@actions/github";
 
 import sendDiscordNotification from "./discord-sender.js";
 
 async function run() {
   try {
     // Get inputs defined in action.yml
-    const githubToken = getInput("github-token", { required: true });
     const discordWebhookUrl = getInput("discord-webhook-url", {
       required: true,
     });
@@ -21,19 +20,19 @@ async function run() {
       return;
     }
 
-    // Set environment variable for Discord webhook URL
-    process.env.DISCORD_WEBHOOK_URL = discordWebhookUrl;
-
-    // Create GitHub API client
-    const github = getOctokit(githubToken);
-
     // Create core object with required methods
     // Note: discord-sender.js calls core.setFailed() and then returns,
     // so we just need to map it to the action's setFailed function
     const core = { setFailed: setFailed };
 
     // Call the sendDiscordNotification function from discord-sender
-    await sendDiscordNotification(core, github, context, deploymentInfo);
+    // Pass webhook URL directly as parameter (more secure than process.env)
+    await sendDiscordNotification(
+      core,
+      context,
+      deploymentInfo,
+      discordWebhookUrl
+    );
   } catch (error) {
     setFailed(`Action failed: ${error.message}`);
   }

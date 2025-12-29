@@ -63,12 +63,17 @@ function createDiscordEmbed(prInfo, deploymentInfo) {
 /**
  * Sends Discord notification for preview deployment
  * @param {Object} core - GitHub Actions core
- * @param {Object} github - GitHub API instance
  * @param {Object} context - GitHub context (contains PR info)
  * @param {Object} deploymentInfo - Deployment information from URL constructor
+ * @param {string} webhookUrl - Discord webhook URL (passed directly for security)
  * @returns {Promise<void>}
  */
-async function sendDiscordNotification(core, github, context, deploymentInfo) {
+async function sendDiscordNotification(
+  core,
+  context,
+  deploymentInfo,
+  webhookUrl
+) {
   try {
     console.log("🚀 Sending Discord notification...");
 
@@ -91,10 +96,9 @@ async function sendDiscordNotification(core, github, context, deploymentInfo) {
     console.log("PR Info:", JSON.stringify(prInfo, null, 2));
     console.log("Deployment Info:", JSON.stringify(deploymentInfo, null, 2));
 
-    // Get Discord webhook URL from environment
-    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    // Validate webhook URL
     if (!webhookUrl) {
-      core.setFailed("❌ DISCORD_WEBHOOK_URL secret is not set");
+      core.setFailed("❌ Discord webhook URL is not provided");
       return;
     }
 
@@ -123,7 +127,9 @@ async function sendDiscordNotification(core, github, context, deploymentInfo) {
     console.log("✅ Discord notification sent successfully!");
   } catch (error) {
     console.error("❌ Error sending Discord notification:", error);
-    core.setFailed(`Failed to send Discord notification: ${error.message}`);
+    // Don't include error details that might leak the webhook URL
+    const safeErrorMessage = error.message || "Unknown error occurred";
+    core.setFailed(`Failed to send Discord notification: ${safeErrorMessage}`);
   }
 }
 

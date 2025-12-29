@@ -2,9 +2,6 @@ name: 'Discord Notification Sender'
 description: 'Sends Discord notifications for PR deployments with deployment info'
 
 inputs:
-  github-token:
-    description: 'GitHub token for API access'
-    required: true
   discord-webhook-url:
     description: 'Discord webhook URL for sending notifications'
     required: true
