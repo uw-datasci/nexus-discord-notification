@@ -1,90 +1,125 @@
-# Sample GitHub Action
+# Discord Notification Sender
 
-A template repository for creating GitHub Actions using Node.js.
+A reusable GitHub Action that sends Discord notifications for PR preview deployments. This action creates a rich Discord embed with PR information, deployment details, and preview links.
 
-## Quick Start
+## Features
 
-1. **Clone this template** or use it to create a new repository
-2. **Customize `action.yml`** with your action's metadata, inputs, and outputs
-3. **Implement your logic** in `src/index.js`
-4. **Build the action** to bundle it into `dist/`
-5. **Test and publish** your action
+- 🚀 Sends Discord notifications when preview deployments are ready
+- 📋 Displays PR information (number, title, branch, author)
+- 🔗 Includes preview deployment link
+- 📝 Shows latest commit information (if available)
+- 🎨 Beautiful Discord embed with Vercel branding
+
+## Usage
+
+### Basic Example
+
+```yaml
+- name: Send Discord Notification
+  uses: your-username/nexus-discord-notification@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    deployment-info: ${{ needs.construct-deployment-url.outputs.deployment-info }}
+```
+
+### With Deployment Info from Previous Step
+
+```yaml
+- name: Construct Deployment URL
+  id: construct-deployment-url
+  run: |
+    echo "deployment-info={\"url\":\"https://preview.example.com\",\"commitSha\":\"abc123\",\"commitMessage\":\"Fix bug\"}" >> $GITHUB_OUTPUT
+
+- name: Send Discord Notification
+  uses: your-username/nexus-discord-notification@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    deployment-info: ${{ steps.construct-deployment-url.outputs.deployment-info }}
+```
+
+## Inputs
+
+| Input | Description | Required | Default |
+|-------|-------------|----------|---------|
+| `github-token` | GitHub token for API access | Yes | - |
+| `discord-webhook-url` | Discord webhook URL for sending notifications | Yes | - |
+| `deployment-info` | JSON string containing deployment information | Yes | - |
+
+### Deployment Info Format
+
+The `deployment-info` input should be a JSON string with the following structure:
+
+```json
+{
+  "url": "https://preview-deployment.example.com",
+  "commitSha": "abc123def456",
+  "commitMessage": "Fix: Resolve deployment issue"
+}
+```
+
+- `url` (required): The preview deployment URL
+- `commitSha` (optional): The commit SHA
+- `commitMessage` (optional): The commit message
+
+## Setup
+
+### 1. Create a Discord Webhook
+
+1. Go to your Discord server settings
+2. Navigate to **Integrations** → **Webhooks**
+3. Click **New Webhook**
+4. Copy the webhook URL
+5. Add it as a secret in your GitHub repository: `DISCORD_WEBHOOK_URL`
+
+### 2. Install the Action
+
+Add this action to your workflow file (e.g., `.github/workflows/deploy.yml`):
+
+```yaml
+name: Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        uses: your-username/nexus-discord-notification@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          deployment-info: ${{ needs.construct-deployment-url.outputs.deployment-info }}
+```
 
 ## Project Structure
 
 ```
 .
-├── action.yml           # Action metadata and interface definition
+├── action.yml              # Action metadata and interface definition
 ├── src/
-│   ├── index.js         # Main entry point for your action
-│   └── report.test.js   # Test files
-├── dist/                # Bundled code (generated, do not edit directly)
-├── package.json         # Dependencies and scripts
-└── README.md            # This file
+│   ├── index.js           # Main entry point for the action
+│   └── discord-sender.js  # Discord notification logic
+├── dist/                   # Bundled code (generated, do not edit directly)
+├── package.json           # Dependencies and scripts
+└── README.md              # This file
 ```
 
-## Implementation Guide
+## Development
 
-### 1. Define Your Action (`action.yml`)
-
-The `action.yml` file defines your action's interface:
-
-```yaml
-name: 'Your Action Name'
-description: 'What your action does'
-inputs:
-  input-name:
-    description: 'Description of the input'
-    required: true
-    default: 'default value'
-outputs:
-  output-name:
-    description: 'Description of the output'
-runs:
-  using: 'node20'
-  main: 'dist/index.js'
-```
-
-### 2. Implement Your Logic (`src/index.js`)
-
-Use the `@actions/core` and `@actions/github` packages:
-
-```javascript
-import { getInput, setOutput, setFailed } from "@actions/core";
-import { context } from "@actions/github";
-
-async function run() {
-  try {
-    // Get inputs
-    const myInput = getInput("input-name", { required: true });
-    
-    // Your logic here
-    const result = processInput(myInput);
-    
-    // Set outputs
-    setOutput("output-name", result);
-  } catch (error) {
-    setFailed(`Action failed: ${error.message}`);
-  }
-}
-
-await run();
-```
-
-### 3. Install Dependencies
+### Install Dependencies
 
 ```bash
 npm install
 ```
 
-Key dependencies:
-- `@actions/core` - Core GitHub Actions functionality (inputs, outputs, logging)
-- `@actions/github` - GitHub API client and context
-- `@vercel/ncc` - Bundles your code into a single file for distribution
+### Build the Action
 
-### 4. Build Your Action
-
-Before using your action, bundle it:
+Before using the action, you need to bundle it:
 
 ```bash
 npm run build
@@ -92,56 +127,28 @@ npm run build
 
 This creates `dist/index.js` which contains all your code and dependencies in a single file.
 
-### 5. Test Your Action
+**Important:** Always commit the `dist/` folder after building, as GitHub Actions runs from the bundled code.
 
-Add tests in `src/*.test.js`:
+### Run Tests
 
 ```bash
 npm test
 ```
 
-### 6. Use Your Action in a Workflow
+## Requirements
 
-```yaml
-steps:
-  - name: Run My Action
-    uses: your-username/your-action@v1
-    with:
-      input-name: 'some value'
-```
+- Node.js 20+
+- GitHub Actions workflow running on a pull request event
+- Discord webhook URL configured as a repository secret
 
-## Key Concepts
+## Discord Embed Preview
 
-### Inputs
-- Defined in `action.yml`
-- Retrieved using `getInput()` in your code
-- Can be required or optional with defaults
+The action sends a Discord embed with:
 
-### Outputs
-- Defined in `action.yml`
-- Set using `setOutput()` in your code
-- Available to subsequent workflow steps
-
-### Context
-- Access workflow context via `@actions/github`
-- Includes repo info, event data, actor, etc.
-
-### Error Handling
-- Use `setFailed()` to mark action as failed
-- Always wrap your code in try-catch blocks
-
-## Distribution
-
-GitHub Actions run from the `dist/` folder, not directly from `src/`. Always:
-1. Run `npm run build` after making changes
-2. Commit both `src/` and `dist/` to your repository
-3. Tag releases for version management
-
-## Resources
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Creating a JavaScript Action](https://docs.github.com/en/actions/creating-actions/creating-a-javascript-action)
-- [@actions/toolkit](https://github.com/actions/toolkit)
+- **Title**: Preview Deployment Ready
+- **PR Information**: Number, title, branch, and author
+- **Commit Info**: SHA and message (if available)
+- **Preview Link**: Direct link to the deployment
 
 ## License
 

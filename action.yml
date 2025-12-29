@@ -1,5 +1,5 @@
 name: 'Discord Notification Sender'
-description: 'Sends Discord notifications for PR deployments with deployment info and affected areas analysis'
+description: 'Sends Discord notifications for PR deployments with deployment info'
 
 inputs:
   github-token:
