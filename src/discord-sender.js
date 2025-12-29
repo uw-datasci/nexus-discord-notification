@@ -61,14 +61,14 @@ function createDiscordEmbed(prInfo, deploymentInfo) {
 }
 
 /**
- * Main function to send Discord notification
+ * Sends Discord notification for preview deployment
  * @param {Object} core - GitHub Actions core
  * @param {Object} github - GitHub API instance
  * @param {Object} context - GitHub context (contains PR info)
  * @param {Object} deploymentInfo - Deployment information from URL constructor
  * @returns {Promise<void>}
  */
-async function main(core, github, context, deploymentInfo) {
+async function sendDiscordNotification(core, github, context, deploymentInfo) {
   try {
     console.log("🚀 Sending Discord notification...");
 
@@ -109,9 +109,7 @@ async function main(core, github, context, deploymentInfo) {
     // Send to Discord webhook
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -129,4 +127,4 @@ async function main(core, github, context, deploymentInfo) {
   }
 }
 
-module.exports = { main };
+export default sendDiscordNotification;

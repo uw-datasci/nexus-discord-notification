@@ -1,7 +1,7 @@
 import { getInput, setFailed } from "@actions/core";
 import { getOctokit, context } from "@actions/github";
 
-const { main } = require("./discord-notification-sender.js");
+import sendDiscordNotification from "./discord-sender.js";
 
 async function run() {
   try {
@@ -28,14 +28,12 @@ async function run() {
     const github = getOctokit(githubToken);
 
     // Create core object with required methods
-    // Note: discord-notification-sender.js calls core.setFailed() and then returns,
+    // Note: discord-sender.js calls core.setFailed() and then returns,
     // so we just need to map it to the action's setFailed function
-    const core = {
-      setFailed: setFailed,
-    };
+    const core = { setFailed: setFailed };
 
-    // Call the main function from discord-notification-sender
-    await main(core, github, context, deploymentInfo);
+    // Call the sendDiscordNotification function from discord-sender
+    await sendDiscordNotification(core, github, context, deploymentInfo);
   } catch (error) {
     setFailed(`Action failed: ${error.message}`);
   }
