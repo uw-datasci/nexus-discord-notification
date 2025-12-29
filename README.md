@@ -16,9 +16,8 @@ A reusable GitHub Action that sends Discord notifications for PR preview deploym
 
 ```yaml
 - name: Send Discord Notification
-  uses: your-username/nexus-discord-notification@v1
+  uses: uw-datasci/nexus-discord-notification@v1
   with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
     discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
     deployment-info: ${{ needs.construct-deployment-url.outputs.deployment-info }}
 ```
@@ -32,9 +31,8 @@ A reusable GitHub Action that sends Discord notifications for PR preview deploym
     echo "deployment-info={\"url\":\"https://preview.example.com\",\"commitSha\":\"abc123\",\"commitMessage\":\"Fix bug\"}" >> $GITHUB_OUTPUT
 
 - name: Send Discord Notification
-  uses: your-username/nexus-discord-notification@v1
+  uses: uw-datasci/nexus-discord-notification@v1
   with:
-    github-token: ${{ secrets.GITHUB_TOKEN }}
     discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
     deployment-info: ${{ steps.construct-deployment-url.outputs.deployment-info }}
 ```
@@ -43,7 +41,6 @@ A reusable GitHub Action that sends Discord notifications for PR preview deploym
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `github-token` | GitHub token for API access | Yes | - |
 | `discord-webhook-url` | Discord webhook URL for sending notifications | Yes | - |
 | `deployment-info` | JSON string containing deployment information | Yes | - |
 
@@ -89,9 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Send Discord Notification
-        uses: your-username/nexus-discord-notification@v1
+        uses: uw-datasci/nexus-discord-notification@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           discord-webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           deployment-info: ${{ needs.construct-deployment-url.outputs.deployment-info }}
 ```
