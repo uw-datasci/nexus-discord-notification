@@ -1,7 +1,7 @@
 {
-  "name": "sample-action",
+  "name": "nexus-discord-notification",
   "version": "1.0.0",
-  "description": "A sample GitHub Action template",
+  "description": "GitHub Action to send Discord notifications for PR deployments",
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/index.js -o dist",
@@ -9,13 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/sample-action.git"
+    "url": "git+https://github.com/uw-datasci/nexus-discord-notification.git"
   },
   "keywords": [
     "github-action",
-    "template"
+    "discord",
+    "notification",
+    "vercel",
+    "deployment"
   ],
-  "author": "your-username",
+  "author": "UWaterloo Data Science Club",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.10.1",

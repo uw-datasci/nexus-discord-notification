@@ -29922,6 +29922,145 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 339:
+/***/ ((module) => {
+
+/**
+ * Discord Notification Sender - Sends Discord notifications for PR deployments
+ */
+
+/**
+ * Creates a rich Discord embed for preview deployment
+ * @param {Object} prInfo - PR information
+ * @param {Object} deploymentInfo - Deployment information
+ * @returns {Object} Discord embed object
+ */
+function createDiscordEmbed(prInfo, deploymentInfo) {
+  const embed = {
+    title: "🚀 Preview Deployment Ready",
+    description: `**${prInfo.title}**`,
+    color: 0x00d4aa, // Vercel green
+    fields: [
+      {
+        name: "📋 Pull Request",
+        value: `[#${prInfo.number}](${prInfo.url})`,
+        inline: true,
+      },
+      {
+        name: "🌿 Branch",
+        value: `\`${prInfo.branchName}\``,
+        inline: true,
+      },
+      {
+        name: "👤 Author",
+        value: `@${prInfo.author}`,
+        inline: true,
+      },
+    ],
+    author: {
+      name: prInfo.author,
+      icon_url: prInfo.authorAvatar,
+    },
+    timestamp: new Date().toISOString(),
+    footer: {
+      text: "Vercel Preview Deployment",
+      icon_url: "https://vercel.com/favicon.ico",
+    },
+  };
+
+  // Add commit info if available
+  if (deploymentInfo.commitMessage && deploymentInfo.commitSha) {
+    embed.fields.push({
+      name: "📝 Latest Commit",
+      value: `\`${deploymentInfo.commitSha}\` ${deploymentInfo.commitMessage}`,
+      inline: false,
+    });
+  }
+
+  // Add deployment link
+  embed.fields.push({
+    name: "🔗 Preview Link",
+    value: `[View Deployment](${deploymentInfo.url})`,
+    inline: false,
+  });
+
+  return embed;
+}
+
+/**
+ * Main function to send Discord notification
+ * @param {Object} core - GitHub Actions core
+ * @param {Object} github - GitHub API instance
+ * @param {Object} context - GitHub context (contains PR info)
+ * @param {Object} deploymentInfo - Deployment information from URL constructor
+ * @returns {Promise<void>}
+ */
+async function main(core, github, context, deploymentInfo) {
+  try {
+    console.log("🚀 Sending Discord notification...");
+
+    // Extract PR info directly from context
+    const pr = context.payload.pull_request;
+    if (!pr) {
+      core.setFailed("❌ No PR found in context");
+      return;
+    }
+
+    const prInfo = {
+      number: pr.number,
+      title: pr.title,
+      url: pr.html_url,
+      author: pr.user.login,
+      authorAvatar: pr.user.avatar_url,
+      branchName: pr.head.ref,
+    };
+
+    console.log("PR Info:", JSON.stringify(prInfo, null, 2));
+    console.log("Deployment Info:", JSON.stringify(deploymentInfo, null, 2));
+
+    // Get Discord webhook URL from environment
+    const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+    if (!webhookUrl) {
+      core.setFailed("❌ DISCORD_WEBHOOK_URL secret is not set");
+      return;
+    }
+
+    // Create Discord embed
+    const embed = createDiscordEmbed(prInfo, deploymentInfo);
+    const payload = {
+      embeds: [embed],
+    };
+
+    console.log("Sending Discord notification...");
+
+    // Send to Discord webhook
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Discord webhook failed (${response.status}): ${errorText}`
+      );
+    }
+
+    console.log("✅ Discord notification sent successfully!");
+  } catch (error) {
+    console.error("❌ Error sending Discord notification:", error);
+    core.setFailed(`Failed to send Discord notification: ${error.message}`);
+  }
+}
+
+module.exports = { main };
+
+
+/***/ }),
+
 /***/ 5105:
 /***/ ((module, __webpack_exports__, __nccwpck_require__) => {
 
@@ -29935,21 +30074,41 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
+const { main } = __nccwpck_require__(339);
+
 async function run() {
   try {
     // Get inputs defined in action.yml
-    const exampleInput = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("example-input", { required: true });
+    const githubToken = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("github-token", { required: true });
+    const discordWebhookUrl = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("discord-webhook-url", {
+      required: true,
+    });
+    const deploymentInfoJson = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)("deployment-info", { required: true });
 
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Running action with input: ${exampleInput}`);
+    // Parse deployment info JSON
+    let deploymentInfo;
+    try {
+      deploymentInfo = JSON.parse(deploymentInfoJson);
+    } catch (error) {
+      (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Failed to parse deployment-info JSON: ${error.message}`);
+      return;
+    }
 
-    // TODO: Implement your action logic here
-    // Example: Process the input and generate output
-    const result = `Processed: ${exampleInput}`;
+    // Set environment variable for Discord webhook URL
+    process.env.DISCORD_WEBHOOK_URL = discordWebhookUrl;
 
-    // Set outputs that can be used by other steps
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput)("example-output", result);
+    // Create GitHub API client
+    const github = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(githubToken);
 
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("Action completed successfully!");
+    // Create core object with required methods
+    // Note: discord-notification-sender.js calls core.setFailed() and then returns,
+    // so we just need to map it to the action's setFailed function
+    const core = {
+      setFailed: _actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed,
+    };
+
+    // Call the main function from discord-notification-sender
+    await main(core, github, _actions_github__WEBPACK_IMPORTED_MODULE_1__.context, deploymentInfo);
   } catch (error) {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Action failed: ${error.message}`);
   }

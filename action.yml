@@ -1,15 +1,16 @@
-name: 'Sample Action'
-description: 'A sample GitHub Action template'
+name: 'Discord Notification Sender'
+description: 'Sends Discord notifications for PR deployments with deployment info and affected areas analysis'
 
 inputs:
-  example-input:
-    description: 'An example input parameter'
+  github-token:
+    description: 'GitHub token for API access'
     required: true
-    default: 'default value'
-
-outputs:
-  example-output:
-    description: 'An example output value'
+  discord-webhook-url:
+    description: 'Discord webhook URL for sending notifications'
+    required: true
+  deployment-info:
+    description: 'JSON string containing deployment information (url, commitSha, commitMessage)'
+    required: true
 
 runs:
   using: 'node20'
